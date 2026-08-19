@@ -1,0 +1,25 @@
+{
+  "name": "browser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:logs": "pm2 logs browser-automation",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

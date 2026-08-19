@@ -1,0 +1,41 @@
+# Alternative to PM2 — a native systemd service.
+# Use ONE of PM2 or systemd, not both.
+#
+# Install:
+#   sudo cp deploy/browser-automation.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now browser-automation
+#
+# Logs:
+#   journalctl -u browser-automation -f
+
+[Unit]
+Description=Browser Automation Server
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+# EDIT this path to match where you deploy the project on the VPS:
+WorkingDirectory=/root/browser
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+
+# Hard memory ceiling — if the Node process (not just Chrome) exceeds
+# this, the kernel/systemd will stop it and Restart=always brings it
+# back clean. Tune to your VPS's total RAM (this assumes ~3.8GB total).
+MemoryMax=900M
+
+# Don't restart-loop forever if something is fundamentally broken
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+Environment=NODE_ENV=production
+# Server settings (port, restart interval, memory threshold) live in
+# config.js — edit that file directly, no .env needed.
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
