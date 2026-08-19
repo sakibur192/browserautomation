@@ -138,7 +138,7 @@ app.post("/me/restart", async (req, res) => {
 
     try {
 
-        const page = getPage();
+        const page = await getPageSafe();
 
         await page.goto(
             "https://businessweb-mobi.com/",
@@ -162,7 +162,7 @@ app.post("/me/restart", async (req, res) => {
 
 app.post("/me/reset", async (req, res) => {
 
-    const page = getPage();
+    const page = await getPageSafe();
 
     meState = "LOGIN";
     otpAttempts = 0;
@@ -180,7 +180,7 @@ app.post("/me/reset", async (req, res) => {
 
 app.get("/me", async (req, res) => {
 
-    const page = getPage();
+    const page = await getPageSafe();
 
     const screenshot = await page.screenshot({
         type: "png",
@@ -351,7 +351,7 @@ app.post(
 
         try {
 
-            const page = getPage();
+            const page = await getPageSafe();
 
             //------------------------------------
             // LOGIN STAGE
@@ -553,7 +553,7 @@ app.post(
 
         } catch (err) {
 
-            const page = getPage();
+            const page = await getPageSafe();
 
             const screenshot =
                 await page.screenshot({
@@ -600,7 +600,7 @@ ${err.stack}
 
 //     try {
 
-//         const page = getPage();
+//         const page = await getPageSafe();
 
 //         const logoutButton =
 //             page.locator(
@@ -640,7 +640,7 @@ ${err.stack}
 // });
 app.post("/me/logout", async (req, res) => {
     try {
-        const page = getPage();
+        const page = await getPageSafe();
 
         // 1. Click the initial navigation logout button
         const logoutButton = page.locator("button.nav-item--logout");
@@ -1079,7 +1079,7 @@ app.get("/setup-database", async (req, res) => {
 
 // async function deposit(webUserId, amount) {
 
-//                 const page = getPage();
+//                 const page = await getPageSafe();
 
 //                 console.log("\n==============================");
 //                 console.log("START DEPOSIT");
@@ -1262,7 +1262,7 @@ app.get("/setup-database", async (req, res) => {
 
 async function deposit(webUserId, amount) {
 
-    const page = getPage();
+    const page = await getPageSafe();
 
     console.log("\n==============================");
     console.log("START DEPOSIT");
@@ -1861,7 +1861,7 @@ app.post("/deposit", async (req, res) => {
 
 async function withdraw(withdrawCode) {
 
-    const page = getPage();
+    const page = await getPageSafe();
 
     console.log("\n==============================");
     console.log("START WITHDRAW");
@@ -1977,11 +1977,17 @@ app.post("/restart-browser", async (req, res) => {
 
     try {
 
-       
-
         console.log("Browser restart requested...");
 
-        await restartBrowser();
+        // IMPORTANT: this now waits its turn behind the job queue
+        // instead of calling restartBrowser() directly. Previously,
+        // hitting this while a deposit/withdraw was mid-flight would
+        // null out the shared page out from under it — the deposit's
+        // next page.reload()/page.click() etc. would then throw
+        // "Cannot read properties of null" and the job would fail.
+        // Queuing it guarantees no automation step ever runs against
+        // a page that's being torn down.
+        await addToQueue(() => restartBrowser("manual-api"));
 
         res.json({
             success: true,
