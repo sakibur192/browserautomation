@@ -1260,380 +1260,168 @@ app.get("/setup-database", async (req, res) => {
 
 // }
 
-//6000 after 
-// async function deposit(webUserId, amount) {
+async function deposit(webUserId, amount) {
 
-//     const page = await getPageSafe();
+    const page = await getPageSafe();
 
-//     console.log("\n==============================");
-//     console.log("START DEPOSIT");
-//     console.log("User:", webUserId);
-//     console.log("Amount:", amount);
-//     console.log("==============================");
+    console.log("\n==============================");
+    console.log("START DEPOSIT");
+    console.log("User:", webUserId);
+    console.log("Amount:", amount);
+    console.log("==============================");
 
-//     try {
+    try {
 
-//         //----------------------------------------------------
-//         // Open Deposit Modal
-//         //----------------------------------------------------
+        //----------------------------------------------------
+        // Open Deposit Modal
+        //----------------------------------------------------
 
-//         await page.reload();
-//         await page.waitForLoadState("domcontentloaded", {
-//             timeout: 60000
-//         });
+        await page.reload();
+        await page.waitForLoadState("domcontentloaded");
 
-//         console.log("[1] Clicking Deposit button...");
+        console.log("[1] Clicking Deposit button...");
 
-//         await page.getByTestId("deposit-show-button").waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
+        await page.getByTestId("deposit-show-button").click();
 
-//         await page.getByTestId("deposit-show-button").click();
+        //----------------------------------------------------
+        // Wait for User ID Input
+        //----------------------------------------------------
 
-//         //----------------------------------------------------
-//         // Wait for User ID Input
-//         //----------------------------------------------------
+        console.log("[2] Waiting for User ID input...");
 
-//         console.log("[2] Waiting for User ID input...");
+        const userInput = page
+            .locator('div[data-testid="deposit-search-user-input"]')
+            .locator("input#client_id");
 
-//         const userInput = page
-//             .locator('div[data-testid="deposit-search-user-input"]')
-//             .locator("input#client_id");
+        await userInput.waitFor({
+            state: "visible",
+            timeout: 30000
+        });
 
-//         await userInput.waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
+        console.log("[3] Filling User ID...");
 
-//         console.log("[3] Filling User ID...");
+        await userInput.click();
 
-//         await userInput.click();
+        await userInput.press("Control+A");
+        await userInput.press("Backspace");
 
-//         await userInput.press("Control+A");
-//         await userInput.press("Backspace");
+        await userInput.fill(String(webUserId));
 
-//         await userInput.fill(String(webUserId));
+        const typedId = await userInput.inputValue();
 
-//         const typedId = await userInput.inputValue();
+        console.log("Typed User ID =", typedId);
 
-//         console.log("Typed User ID =", typedId);
+        if (typedId !== String(webUserId)) {
+            throw new Error(
+                `User ID mismatch. Expected ${webUserId}, Got ${typedId}`
+            );
+        }
 
-//         if (typedId !== String(webUserId)) {
-//             throw new Error(
-//                 `User ID mismatch. Expected ${webUserId}, Got ${typedId}`
-//             );
-//         }
+        //----------------------------------------------------
+        // Click Next
+        //----------------------------------------------------
 
-//         //----------------------------------------------------
-//         // Click Next
-//         //----------------------------------------------------
+        console.log("[4] Clicking Next...");
 
-//         console.log("[4] Clicking Next...");
+        const nextButton = page.getByTestId("deposit-search-user-submit");
 
-//         const nextButton = page.getByTestId("deposit-search-user-submit");
+        await nextButton.waitFor({
+            state: "visible"
+        });
 
-//         await nextButton.waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
+        await Promise.all([
+            nextButton.click(),
+            page.waitForLoadState("networkidle").catch(() => {})
+        ]);
 
-//         await Promise.all([
-//             nextButton.click(),
+        console.log("[5] Waiting for Amount input...");
 
-//             page.waitForLoadState("networkidle", {
-//                 timeout: 60000
-//             }).catch(() => {})
-//         ]);
+        //----------------------------------------------------
+        // Wait Amount Input
+        //----------------------------------------------------
 
-//         console.log("[5] Waiting for Amount input...");
+        const amountInput = page.locator("input#amount");
 
-//         //----------------------------------------------------
-//         // Wait Amount Input
-//         //----------------------------------------------------
+        await amountInput.waitFor({
+            state: "visible",
+            timeout: 30000
+        });
 
-//         const amountInput = page.locator("input#amount");
+        console.log("[6] Filling Amount...");
 
-//         await amountInput.waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
+        await amountInput.click();
 
-//         console.log("[6] Filling Amount...");
+        await amountInput.press("Control+A");
+        await amountInput.press("Backspace");
 
-//         await amountInput.click();
+        await amountInput.fill(String(amount));
 
-//         await amountInput.press("Control+A");
-//         await amountInput.press("Backspace");
+        const typedAmount = await amountInput.inputValue();
 
-//         await amountInput.fill(String(amount));
+        console.log("Typed Amount =", typedAmount);
 
-//         const typedAmount = await amountInput.inputValue();
-
-//         console.log("Typed Amount =", typedAmount);
-
-//         //----------------------------------------------------
-//         // Deposit Button
-//         //----------------------------------------------------
-
-//         console.log("[7] Waiting Deposit button...");
-
-//         const depositModal = page.getByTestId("modal-deposit-amount");
-
-//         await depositModal.waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
-
-//         const depositButton = depositModal.getByRole("button", {
-//             name: "Deposit"
-//         });
-
-//         await depositButton.waitFor({
-//             state: "visible",
-//             timeout: 60000
-//         });
-
-//         await depositButton.click();
-
-//         //----------------------------------------------------
-//         // Look for Error Toast vs. Success Path
-//         //----------------------------------------------------
-
-//         console.log("[8] Checking transaction outcome...");
-
-//         // Give the network and UI animations 2 seconds to settle
-//         await page.waitForTimeout(60000);
-
-//         //----------------------------------------------------
-//         // Check Error Toast
-//         //----------------------------------------------------
-
-//         const errorToastSelector =
-//             'h4.custom-toast__title[data-v-38b0b119]';
-
-//         const activeErrorToast = page
-//             .locator(errorToastSelector)
-//             .filter({
-//                 hasText: "Error"
-//             });
-
-//         const isErrorVisible =
-//             await activeErrorToast.isVisible().catch(() => false);
-
-//         if (isErrorVisible) {
-
-//             console.log(
-//                 "========== FAILED (Toast Error Confirmed) =========="
-//             );
-
-//             return {
-//                 success: false,
-//                 reason: "Error toast appeared on page."
-//             };
-//         }
-
-//         console.log(
-//             "No active error toast visible. Verification clear."
-//         );
-
-//         console.log("========== SUCCESS ==========");
-
-//         return {
-//             success: true
-//         };
-
-//     } catch (err) {
-
-//         console.log("========== FAILED ==========");
-//         console.log(err);
-
-//         try {
-//             // await page.screenshot({
-//             //     path: `deposit-error-${Date.now()}.png`,
-//             //     fullPage: true
-//             // });
-
-//             console.log("Screenshot saved.");
-
-//         } catch {}
-
-//         throw err;
-//     }
-// }
-
-
-
-
-
-
-
-
-
-
-//last working one without 60000
-// async function deposit(webUserId, amount) {
-
-//     const page = await getPageSafe();
-
-//     console.log("\n==============================");
-//     console.log("START DEPOSIT");
-//     console.log("User:", webUserId);
-//     console.log("Amount:", amount);
-//     console.log("==============================");
-
-//     try {
-
-//         //----------------------------------------------------
-//         // Open Deposit Modal
-//         //----------------------------------------------------
-
-//         await page.reload();
-//         await page.waitForLoadState("domcontentloaded");
-
-//         console.log("[1] Clicking Deposit button...");
-
-//         await page.getByTestId("deposit-show-button").click();
-
-//         //----------------------------------------------------
-//         // Wait for User ID Input
-//         //----------------------------------------------------
-
-//         console.log("[2] Waiting for User ID input...");
-
-//         const userInput = page
-//             .locator('div[data-testid="deposit-search-user-input"]')
-//             .locator("input#client_id");
-
-//         await userInput.waitFor({
-//             state: "visible",
-//             timeout: 30000
-//         });
-
-//         console.log("[3] Filling User ID...");
-
-//         await userInput.click();
-
-//         await userInput.press("Control+A");
-//         await userInput.press("Backspace");
-
-//         await userInput.fill(String(webUserId));
-
-//         const typedId = await userInput.inputValue();
-
-//         console.log("Typed User ID =", typedId);
-
-//         if (typedId !== String(webUserId)) {
-//             throw new Error(
-//                 `User ID mismatch. Expected ${webUserId}, Got ${typedId}`
-//             );
-//         }
-
-//         //----------------------------------------------------
-//         // Click Next
-//         //----------------------------------------------------
-
-//         console.log("[4] Clicking Next...");
-
-//         const nextButton = page.getByTestId("deposit-search-user-submit");
-
-//         await nextButton.waitFor({
-//             state: "visible"
-//         });
-
-//         await Promise.all([
-//             nextButton.click(),
-//             page.waitForLoadState("networkidle").catch(() => {})
-//         ]);
-
-//         console.log("[5] Waiting for Amount input...");
-
-//         //----------------------------------------------------
-//         // Wait Amount Input
-//         //----------------------------------------------------
-
-//         const amountInput = page.locator("input#amount");
-
-//         await amountInput.waitFor({
-//             state: "visible",
-//             timeout: 30000
-//         });
-
-//         console.log("[6] Filling Amount...");
-
-//         await amountInput.click();
-
-//         await amountInput.press("Control+A");
-//         await amountInput.press("Backspace");
-
-//         await amountInput.fill(String(amount));
-
-//         const typedAmount = await amountInput.inputValue();
-
-//         console.log("Typed Amount =", typedAmount);
-
-//         //----------------------------------------------------
-//         // Deposit Button
-//         //----------------------------------------------------
-
-//         console.log("[7] Waiting Deposit button...");
-
-//         const depositModal = page.getByTestId("modal-deposit-amount");
-
-//         await depositModal.waitFor({
-//             state: "visible"
-//         });
-
-//         const depositButton = depositModal.getByRole("button", {
-//             name: "Deposit"
-//         });
-
-//         await depositButton.click();
-
-//         //----------------------------------------------------
-//         // Look for Error Toast vs. Success Path
-//         //----------------------------------------------------
-//         console.log("[8] Checking transaction outcome...");
-
-//         // Give the network and UI animations a clear moment to settle down
-//         await page.waitForTimeout(2000);
-
-//         // Explicitly check if a visible error message toast is on screen right now
-//         const errorToastSelector = 'h4.custom-toast__title[data-v-38b0b119]';
-//         const activeErrorToast = page.locator(errorToastSelector).filter({ hasText: 'Error' });
-//         const isErrorVisible = await activeErrorToast.isVisible().catch(() => false);
-
-//         if (isErrorVisible) {
-//             console.log("========== FAILED (Toast Error Confirmed) ==========");
-//             return {
-//                 success: false,
-//                 reason: "Error toast appeared on page."
-//             };
-//         }
-
-//         console.log("No active error toast visible. Verification clear.");
-//         console.log("========== SUCCESS ==========");
-
-//         return {
-//             success: true
-//         };
-
-//     } catch (err) {
-
-//         console.log("========== FAILED ==========");
-//         console.log(err);
-
-//         try {
-//             // await page.screenshot({
-//             //     path: `deposit-error-${Date.now()}.png`,
-//             //     fullPage: true
-//             // });
-//             console.log("Screenshot saved.");
-//         } catch {}
-
-//         throw err;
-//     }
-// }
+        //----------------------------------------------------
+        // Deposit Button
+        //----------------------------------------------------
+
+        console.log("[7] Waiting Deposit button...");
+
+        const depositModal = page.getByTestId("modal-deposit-amount");
+
+        await depositModal.waitFor({
+            state: "visible"
+        });
+
+        const depositButton = depositModal.getByRole("button", {
+            name: "Deposit"
+        });
+
+        await depositButton.click();
+
+        //----------------------------------------------------
+        // Look for Error Toast vs. Success Path
+        //----------------------------------------------------
+        console.log("[8] Checking transaction outcome...");
+
+        // Give the network and UI animations a clear moment to settle down
+        await page.waitForTimeout(2000);
+
+        // Explicitly check if a visible error message toast is on screen right now
+        const errorToastSelector = 'h4.custom-toast__title[data-v-38b0b119]';
+        const activeErrorToast = page.locator(errorToastSelector).filter({ hasText: 'Error' });
+        const isErrorVisible = await activeErrorToast.isVisible().catch(() => false);
+
+        if (isErrorVisible) {
+            console.log("========== FAILED (Toast Error Confirmed) ==========");
+            return {
+                success: false,
+                reason: "Error toast appeared on page."
+            };
+        }
+
+        console.log("No active error toast visible. Verification clear.");
+        console.log("========== SUCCESS ==========");
+
+        return {
+            success: true
+        };
+
+    } catch (err) {
+
+        console.log("========== FAILED ==========");
+        console.log(err);
+
+        try {
+            // await page.screenshot({
+            //     path: `deposit-error-${Date.now()}.png`,
+            //     fullPage: true
+            // });
+            console.log("Screenshot saved.");
+        } catch {}
+
+        throw err;
+    }
+}
 
 // app.post("/deposit", async (req, res) => {
 
@@ -1934,51 +1722,30 @@ app.get("/setup-database", async (req, res) => {
 // });
 
 app.post("/deposit", async (req, res) => {
-
+    // 1. Define your hardcoded secret token here
     const HARDCODED_AUTH_TOKEN = "your-secure-static-token-here";
 
     try {
-
-        // ============================================
-        // AUTHORIZATION
-        // ============================================
-
+        // 2. Extract token from standard "Authorization: Bearer <token>" format, or fall back to raw string
         const authHeader = req.headers.authorization;
-
         let incomingToken = authHeader;
 
         if (authHeader && authHeader.startsWith("Bearer ")) {
-            incomingToken = authHeader.substring(7);
+            incomingToken = authHeader.substring(7); // Extract just the token string after "Bearer "
         }
 
-        if (
-            !incomingToken ||
-            incomingToken !== HARDCODED_AUTH_TOKEN
-        ) {
+        // 3. Authorization Guard Check
+        if (!incomingToken || incomingToken !== HARDCODED_AUTH_TOKEN) {
             return res.status(401).json({
                 success: false,
                 error: "Unauthorized"
             });
         }
 
-
-        // ============================================
-        // QUEUE
-        // ============================================
-
+        // --- Authorized! Proceed with regular logic ---
         const result = await addToQueue(async () => {
-
             let transactionId = null;
-
-            const {
-                webUserId,
-                amount
-            } = req.body;
-
-
-            // ============================================
-            // VALIDATION
-            // ============================================
+            const { webUserId, amount } = req.body;
 
             if (!webUserId || !amount) {
                 return {
@@ -1986,11 +1753,6 @@ app.post("/deposit", async (req, res) => {
                     error: "webUserId and amount are required"
                 };
             }
-
-
-            // ============================================
-            // AUTOMATION SETTINGS
-            // ============================================
 
             const setting = await client.query(`
                 SELECT main_switch, sub_switch
@@ -2008,11 +1770,6 @@ app.post("/deposit", async (req, res) => {
                     code: 0
                 };
             }
-
-
-            // ============================================
-            // CREATE TRANSACTION
-            // ============================================
 
             const trx = await client.query(`
                 INSERT INTO transactions
@@ -2041,616 +1798,63 @@ app.post("/deposit", async (req, res) => {
 
             transactionId = trx.rows[0].id;
 
-            console.log("");
-            console.log("================================");
-            console.log("DEPOSIT TRANSACTION");
-            console.log("Transaction ID:", transactionId);
-            console.log("User:", webUserId);
-            console.log("Amount:", amount);
-            console.log("================================");
-
-
-            // ============================================
-            // RUN DEPOSIT
-            // ============================================
-
-            const startTime = Date.now();
-
             try {
+                const startTime = Date.now();
 
-                const depositResult =
-                    await deposit(webUserId, amount);
+                await deposit(webUserId, amount);
 
-                const duration =
-                    Date.now() - startTime;
-
-                console.log(
-                    "Deposit function result:",
-                    depositResult
-                );
-
-
-                // ========================================
-                // CHECK RESULT FROM deposit()
-                // ========================================
-
-                if (
-                    !depositResult ||
-                    depositResult.success !== true
-                ) {
-
-                    const reason =
-                        depositResult?.reason ||
-                        depositResult?.error ||
-                        "Deposit failed";
-
-
-                    console.log(
-                        "========== DEPOSIT FAILED =========="
-                    );
-
-                    console.log(
-                        "Reason:",
-                        reason
-                    );
-
-
-                    await client.query(`
-                        UPDATE transactions
-                        SET
-                            status = 'FAILED',
-                            duration_ms = $1,
-                            failure_reason = $2,
-                            response_json = $3,
-                            completed_at = NOW()
-                        WHERE id = $4
-                    `,
-                    [
-                        duration,
-                        reason,
-                        JSON.stringify(depositResult || {
-                            success: false,
-                            error: reason
-                        }),
-                        transactionId
-                    ]);
-
-
-                    return {
-                        success: false,
-                        error: reason,
-                        transactionId
-                    };
-                }
-
-
-                // ========================================
-                // SUCCESS
-                // ========================================
-
-                console.log(
-                    "========== DEPOSIT SUCCESS =========="
-                );
-
+                const duration = Date.now() - startTime;
 
                 await client.query(`
                     UPDATE transactions
                     SET
-                        status = 'SUCCESS',
-                        duration_ms = $1,
-                        response_json = $2,
-                        completed_at = NOW()
-                    WHERE id = $3
+                        status='SUCCESS',
+                        duration_ms=$1,
+                        response_json=$2,
+                        completed_at=NOW()
+                    WHERE id=$3
                 `,
                 [
                     duration,
-                    JSON.stringify(depositResult),
-                    transactionId
-                ]);
-
-
-                return {
-                    success: true,
-                    transactionId
-                };
-
-            } catch (err) {
-
-                const duration =
-                    Date.now() - startTime;
-
-                console.error(
-                    "========== DEPOSIT ERROR =========="
-                );
-
-                console.error(err);
-
-
-                // ========================================
-                // DATABASE FAILED
-                // ========================================
-
-                await client.query(`
-                    UPDATE transactions
-                    SET
-                        status = 'FAILED',
-                        duration_ms = $1,
-                        failure_reason = $2,
-                        response_json = $3,
-                        completed_at = NOW()
-                    WHERE id = $4
-                `,
-                [
-                    duration,
-                    err.message,
                     JSON.stringify({
-                        success: false,
-                        error: err.message
+                        success: true
                     }),
                     transactionId
                 ]);
 
-
                 return {
-                    success: false,
-                    error: err.message,
-                    transactionId
+                    success: true
                 };
+
+            } catch (err) {
+                await client.query(`
+                    UPDATE transactions
+                    SET
+                        status='FAILED',
+                        failure_reason=$1,
+                        completed_at=NOW()
+                    WHERE id=$2
+                `,
+                [
+                    err.message,
+                    transactionId
+                ]);
+
+                throw err;
             }
         });
 
-
-        // ============================================
-        // API RESPONSE
-        // ============================================
-
-        return res.json(result);
-
+        res.json(result);
 
     } catch (err) {
-
-        console.error(
-            "========== /deposit ROUTE ERROR =========="
-        );
-
         console.error(err);
 
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: err.message
         });
     }
 });
-
-
-
-async function deposit(webUserId, amount) {
-
-    const page = await getPageSafe();
-
-    console.log("\n==============================");
-    console.log("START DEPOSIT");
-    console.log("User:", webUserId);
-    console.log("Amount:", amount);
-    console.log("==============================");
-
-    try {
-
-        // ============================================
-        // OPEN DEPOSIT
-        // ============================================
-
-        await page.reload();
-
-        await page.waitForLoadState(
-            "domcontentloaded",
-            {
-                timeout: 60000
-            }
-        );
-
-
-        console.log("[1] Clicking Deposit button...");
-
-        const depositShowButton =
-            page.getByTestId("deposit-show-button");
-
-        await depositShowButton.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-        await depositShowButton.click();
-
-
-        // ============================================
-        // USER ID
-        // ============================================
-
-        console.log("[2] Waiting for User ID input...");
-
-        const userInput = page
-            .locator(
-                'div[data-testid="deposit-search-user-input"]'
-            )
-            .locator("input#client_id");
-
-        await userInput.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-
-        console.log("[3] Filling User ID...");
-
-        await userInput.click();
-
-        await userInput.press("Control+A");
-        await userInput.press("Backspace");
-
-        await userInput.fill(
-            String(webUserId)
-        );
-
-
-        const typedId =
-            await userInput.inputValue();
-
-        console.log(
-            "Typed User ID =",
-            typedId
-        );
-
-
-        if (
-            typedId !== String(webUserId)
-        ) {
-
-            throw new Error(
-                `User ID mismatch. Expected ${webUserId}, Got ${typedId}`
-            );
-        }
-
-
-        // ============================================
-        // NEXT
-        // ============================================
-
-        console.log("[4] Clicking Next...");
-
-        const nextButton =
-            page.getByTestId(
-                "deposit-search-user-submit"
-            );
-
-        await nextButton.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-
-        await nextButton.click();
-
-
-        console.log(
-            "[5] Waiting for Amount input..."
-        );
-
-
-        // ============================================
-        // AMOUNT
-        // ============================================
-
-        const amountInput =
-            page.locator("input#amount");
-
-        await amountInput.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-
-        console.log(
-            "[6] Filling Amount..."
-        );
-
-        await amountInput.click();
-
-        await amountInput.press("Control+A");
-        await amountInput.press("Backspace");
-
-        await amountInput.fill(
-            String(amount)
-        );
-
-
-        const typedAmount =
-            await amountInput.inputValue();
-
-        console.log(
-            "Typed Amount =",
-            typedAmount
-        );
-
-
-        // ============================================
-        // DEPOSIT BUTTON
-        // ============================================
-
-        console.log(
-            "[7] Waiting Deposit button..."
-        );
-
-        const depositModal =
-            page.getByTestId(
-                "modal-deposit-amount"
-            );
-
-        await depositModal.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-
-        const depositButton =
-            depositModal.getByRole(
-                "button",
-                {
-                    name: "Deposit"
-                }
-            );
-
-
-        await depositButton.waitFor({
-            state: "visible",
-            timeout: 60000
-        });
-
-
-        console.log(
-            "[7.1] Clicking Deposit..."
-        );
-
-        await depositButton.click();
-
-
-        // ============================================
-        // TRANSACTION VERIFICATION
-        // ============================================
-
-        console.log(
-            "[8] Checking transaction outcome..."
-        );
-
-
-        const errorToastSelector =
-            'h4.custom-toast__title[data-v-38b0b119]';
-
-
-        const activeErrorToast =
-            page
-                .locator(errorToastSelector)
-                .filter({
-                    hasText: "Error"
-                });
-
-
-        // ============================================
-        // WATCH FOR ERROR
-        // ============================================
-
-        const verificationTime = 5000;
-
-        const checkStartedAt = Date.now();
-
-
-        while (
-            Date.now() - checkStartedAt <
-            verificationTime
-        ) {
-
-            const isErrorVisible =
-                await activeErrorToast
-                    .isVisible()
-                    .catch(() => false);
-
-
-            if (isErrorVisible) {
-
-                console.log(
-                    "========== ERROR TOAST FOUND =========="
-                );
-
-
-                return {
-                    success: false,
-                    reason:
-                        "Error toast appeared on page."
-                };
-            }
-
-
-            // Check every 250ms
-
-            await page.waitForTimeout(250);
-        }
-
-
-        // ============================================
-        // NO ERROR FOUND
-        // ============================================
-
-        console.log(
-            "No error toast detected."
-        );
-
-        console.log(
-            "========== SUCCESS =========="
-        );
-
-
-        return {
-            success: true
-        };
-
-
-    } catch (err) {
-
-        console.log(
-            "========== DEPOSIT FUNCTION ERROR =========="
-        );
-
-        console.log(err);
-
-
-        try {
-
-            console.log(
-                "Screenshot saved."
-            );
-
-        } catch {}
-
-
-        throw err;
-    }
-}
-//6000 marar pore
-
-// app.post("/deposit", async (req, res) => {
-//     // 1. Define your hardcoded secret token here
-//     const HARDCODED_AUTH_TOKEN = "your-secure-static-token-here";
-
-//     try {
-//         // 2. Extract token from standard "Authorization: Bearer <token>" format, or fall back to raw string
-//         const authHeader = req.headers.authorization;
-//         let incomingToken = authHeader;
-
-//         if (authHeader && authHeader.startsWith("Bearer ")) {
-//             incomingToken = authHeader.substring(7); // Extract just the token string after "Bearer "
-//         }
-
-//         // 3. Authorization Guard Check
-//         if (!incomingToken || incomingToken !== HARDCODED_AUTH_TOKEN) {
-//             return res.status(401).json({
-//                 success: false,
-//                 error: "Unauthorized"
-//             });
-//         }
-
-//         // --- Authorized! Proceed with regular logic ---
-//         const result = await addToQueue(async () => {
-//             let transactionId = null;
-//             const { webUserId, amount } = req.body;
-
-//             if (!webUserId || !amount) {
-//                 return {
-//                     success: false,
-//                     error: "webUserId and amount are required"
-//                 };
-//             }
-
-//             const setting = await client.query(`
-//                 SELECT main_switch, sub_switch
-//                 FROM automation_settings
-//                 WHERE id = 1
-//             `);
-
-//             if (
-//                 setting.rows.length === 0 ||
-//                 setting.rows[0].main_switch !== 10 ||
-//                 setting.rows[0].sub_switch !== 20
-//             ) {
-//                 return {
-//                     success: false,
-//                     code: 0
-//                 };
-//             }
-
-//             const trx = await client.query(`
-//                 INSERT INTO transactions
-//                 (
-//                     type,
-//                     web_user_id,
-//                     amount,
-//                     status,
-//                     request_json
-//                 )
-//                 VALUES
-//                 (
-//                     'deposit',
-//                     $1,
-//                     $2,
-//                     'PENDING',
-//                     $3
-//                 )
-//                 RETURNING id
-//             `,
-//             [
-//                 webUserId,
-//                 amount,
-//                 JSON.stringify(req.body)
-//             ]);
-
-//             transactionId = trx.rows[0].id;
-
-//             try {
-//                 const startTime = Date.now();
-
-//                 await deposit(webUserId, amount);
-
-//                 const duration = Date.now() - startTime;
-
-//                 await client.query(`
-//                     UPDATE transactions
-//                     SET
-//                         status='SUCCESS',
-//                         duration_ms=$1,
-//                         response_json=$2,
-//                         completed_at=NOW()
-//                     WHERE id=$3
-//                 `,
-//                 [
-//                     duration,
-//                     JSON.stringify({
-//                         success: true
-//                     }),
-//                     transactionId
-//                 ]);
-
-//                 return {
-//                     success: true
-//                 };
-
-//             } catch (err) {
-//                 await client.query(`
-//                     UPDATE transactions
-//                     SET
-//                         status='FAILED',
-//                         failure_reason=$1,
-//                         completed_at=NOW()
-//                     WHERE id=$2
-//                 `,
-//                 [
-//                     err.message,
-//                     transactionId
-//                 ]);
-
-//                 throw err;
-//             }
-//         });
-
-//         res.json(result);
-
-//     } catch (err) {
-//         console.error(err);
-
-//         res.status(500).json({
-//             success: false,
-//             error: err.message
-//         });
-//     }
-// });
 
 
 
