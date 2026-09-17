@@ -1797,13 +1797,38 @@ app.post("/deposit", async (req, res) => {
             ]);
 
             transactionId = trx.rows[0].id;
-
             try {
                 const startTime = Date.now();
 
-                await deposit(webUserId, amount);
+                const depositResult = await deposit(webUserId, amount);
 
                 const duration = Date.now() - startTime;
+
+                if (!depositResult.success) {
+
+                    await client.query(`
+                        UPDATE transactions
+                        SET
+                            status='FAILED',
+                            failure_reason=$1,
+                            duration_ms=$2,
+                            response_json=$3,
+                            completed_at=NOW()
+                        WHERE id=$4
+                    `,
+                    [
+                        depositResult.reason || "Unknown failure",
+                        duration,
+                        JSON.stringify(depositResult),
+                        transactionId
+                    ]);
+
+                    return {
+                        success: false,
+                        reason: depositResult.reason
+                    };
+
+                }
 
                 await client.query(`
                     UPDATE transactions
@@ -1816,9 +1841,7 @@ app.post("/deposit", async (req, res) => {
                 `,
                 [
                     duration,
-                    JSON.stringify({
-                        success: true
-                    }),
+                    JSON.stringify(depositResult),
                     transactionId
                 ]);
 
@@ -1842,6 +1865,50 @@ app.post("/deposit", async (req, res) => {
 
                 throw err;
             }
+            // try {
+            //     const startTime = Date.now();
+
+            //     await deposit(webUserId, amount);
+
+            //     const duration = Date.now() - startTime;
+
+            //     await client.query(`
+            //         UPDATE transactions
+            //         SET
+            //             status='SUCCESS',
+            //             duration_ms=$1,
+            //             response_json=$2,
+            //             completed_at=NOW()
+            //         WHERE id=$3
+            //     `,
+            //     [
+            //         duration,
+            //         JSON.stringify({
+            //             success: true
+            //         }),
+            //         transactionId
+            //     ]);
+
+            //     return {
+            //         success: true
+            //     };
+
+            // } catch (err) {
+            //     await client.query(`
+            //         UPDATE transactions
+            //         SET
+            //             status='FAILED',
+            //             failure_reason=$1,
+            //             completed_at=NOW()
+            //         WHERE id=$2
+            //     `,
+            //     [
+            //         err.message,
+            //         transactionId
+            //     ]);
+
+            //     throw err;
+            // }
         });
 
         res.json(result);
