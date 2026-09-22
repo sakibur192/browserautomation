@@ -1340,7 +1340,8 @@ async function deposit(webUserId, amount) {
         // Wait Amount Input
         //----------------------------------------------------
 
-        const amountInput = page.locator("input#amount");
+        // const amountInput = page.locator("input#amount");
+ const amountInput = page.locator('input[data-testid="deposit-amount-input"]');
 
         await amountInput.waitFor({
             state: "visible",
